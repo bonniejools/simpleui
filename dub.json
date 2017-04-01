@@ -5,5 +5,8 @@
 	],
 	"description": "A simpled UI framework",
 	"copyright": "Copyright © 2017, Jonathan",
-	"license": "GPL"
+	"license": "GPL",
+        "dependencies": {
+            "xcb-d": "~>2.1.0+1.11.1"
+        }
 }
