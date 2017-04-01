@@ -1,0 +1,9 @@
+{
+	"name": "simpleui",
+	"authors": [
+		"Jonathan Balls"
+	],
+	"description": "A simpled UI framework",
+	"copyright": "Copyright © 2017, Jonathan",
+	"license": "GPL"
+}
