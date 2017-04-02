@@ -1,6 +1,7 @@
 module simpleui.window;
 import std.string;
 import xcb.xcb;
+import std.stdio;
 
 class Window {
     uint id;
@@ -23,6 +24,21 @@ class Window {
         return null;
     }
 
+    ~this() {
+        xcb_disconnect(c);
+    }
+
+    void drawRectangle(short x, short y, ushort width, ushort height) {
+        // Create graphics context
+        uint mask = XCB_GC_FOREGROUND;
+        uint[2] values = [getScreen().white_pixel, 0];
+        uint foreground = xcb_generate_id(c);
+
+        xcb_create_gc(c, foreground, id, mask, values.ptr);
+        xcb_rectangle_t rectangle = {x, y, width, height};
+        xcb_poly_rectangle(c, id, foreground, 1u, &rectangle);
+        }
+
     this(ushort width, ushort height, string title) {
         /* Open the connection to the X server. Use the DISPLAY environment variable */
         c = xcb_connect (null, &screen_nbr);
@@ -30,10 +46,10 @@ class Window {
         this.id = xcb_generate_id(c);
         xcb_screen_t* screen = this.getScreen();
 
-        // Create black foreground context
+
+        // Create a window with a black background
         uint mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
         uint[2] values = [screen.black_pixel, XCB_EVENT_MASK_EXPOSURE];
-
         xcb_create_window (c,
             XCB_COPY_FROM_PARENT,
             id,
@@ -46,16 +62,21 @@ class Window {
             mask, &values[0]);
 
         xcb_map_window (c, id);
+        xcb_flush(c);
 
-        // Create background
-        mask = XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES;
-        values[0] = screen.white_pixel;
-        values[1] = 0;
-        uint foreground = xcb_generate_id(c);
-        xcb_create_gc(c, foreground, id, mask, values.ptr);
+        xcb_generic_event_t *e;
+        outer: while (true) {
+            e = xcb_wait_for_event(c);
+            switch (e.response_type & ~0x80) {
+                case XCB_EXPOSE:
+                    xcb_flush(c);
+                    drawRectangle(0, 0, 100, 100);
+                    writeln("Made rectangle");
+                    break outer;
+                default: break;
+            }
+        }
 
-        xcb_rectangle_t rectangle = {150, 150, 100, 100};
-        xcb_poly_rectangle(c, id, foreground, 1u, &rectangle);
 
         this.setTitle(title);
 
@@ -75,3 +96,4 @@ class Window {
         xcb_flush(c);
     }
 }
+
